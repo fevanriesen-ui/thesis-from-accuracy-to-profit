@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Claude Code local configuration
+.claude/
+
+# macOS
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Raw data (download instructions in data/README.md;
+# see TenneT Transparency Portal and KNMI Climate Data Portal).
+# Excluded from the repo because they are public, reproducible from source,
+# and total ~25 MB.
+data/raw/*.csv
+!data/raw/.gitkeep

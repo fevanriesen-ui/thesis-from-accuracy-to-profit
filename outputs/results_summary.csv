@@ -1,0 +1,21 @@
+Split,Model,Mean cost (EUR/PTU),Total cost (EUR),N,Cost reduction (EUR),Cost reduction (%),Table,Mean bias (MWh),Over-pred rate (%),Under-pred rate (%),MAE (MWh),RMSE (MWh),Regime
+Validation (2024),Baseline (MSE),-2354.54,-82719740.0,35132.0,,,RQ1 Economic Performance,,,,,,
+Validation (2024),Cost-Sensitive,-2463.63,-86552290.0,35132.0,3832544.0,-4.63,RQ1 Economic Performance,,,,,,
+Test (2025),Baseline (MSE),1837.56,64380896.0,35036.0,,,RQ1 Economic Performance,,,,,,
+Test (2025),Cost-Sensitive,1798.15,63000064.0,35036.0,1380832.0,2.14,RQ1 Economic Performance,,,,,,
+Validation (2024),Baseline (MSE),,,,,,RQ2 Forecast Bias,125.5,60.7,39.3,150.2,357.25,
+Validation (2024),Cost-Sensitive,,,,,,RQ2 Forecast Bias,131.26,61.1,38.9,154.73,366.16,
+Test (2025),Baseline (MSE),,,,,,RQ2 Forecast Bias,172.18,61.1,38.9,198.69,450.74,
+Test (2025),Cost-Sensitive,,,,,,RQ2 Forecast Bias,178.94,61.0,39.0,203.97,460.57,
+,Baseline (MSE),1426.88,,18980.0,,,RQ2 Regime Analysis,315.75,68.5,,,,Peak (08-20h)
+,Cost-Sensitive,1330.96,,18980.0,,,RQ2 Regime Analysis,329.06,70.9,,,,Peak (08-20h)
+,Baseline (MSE),2323.04,,16056.0,,,RQ2 Regime Analysis,2.46,52.4,,,,Off-peak
+,Cost-Sensitive,2350.42,,16056.0,,,RQ2 Regime Analysis,1.48,49.2,,,,Off-peak
+,Baseline (MSE),54309.52,,672.0,,,RQ2 Regime Analysis,205.65,67.1,,,,High price (>247 EUR/MWh)
+,Cost-Sensitive,53319.02,,672.0,,,RQ2 Regime Analysis,214.25,69.6,,,,High price (>247 EUR/MWh)
+,Baseline (MSE),811.46,,34364.0,,,RQ2 Regime Analysis,171.52,61.0,,,,Normal price
+,Cost-Sensitive,790.64,,34364.0,,,RQ2 Regime Analysis,178.25,60.8,,,,Normal price
+,Baseline (MSE),-4545.48,,9578.0,,,RQ2 Regime Analysis,172.42,61.4,,,,Dual pricing
+,Cost-Sensitive,-4866.33,,9578.0,,,RQ2 Regime Analysis,180.39,61.9,,,,Dual pricing
+,Baseline (MSE),4239.04,,25458.0,,,RQ2 Regime Analysis,172.09,61.0,,,,Single pricing
+,Cost-Sensitive,4305.51,,25458.0,,,RQ2 Regime Analysis,178.39,60.6,,,,Single pricing

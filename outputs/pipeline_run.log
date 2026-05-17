@@ -1,0 +1,294 @@
+======================================================================
+MSc Thesis Pipeline — From Accuracy to Profit
+F.E. van Riesen | Tilburg University | 2026
+======================================================================
+
+======================================================================
+  Step 1/4 — Building dataset
+======================================================================
+
+Building dataset...
+
+[1/6] Loading metered injections...
+  Metered injections: 140,256 rows loaded.
+
+[2/6] Loading settlement prices...
+  Settlement prices: 140,256 rows loaded.
+
+[3/6] Loading KNMI weather data...
+  KNMI weather: 140,349 rows after resampling to 15-min.
+
+[4/6] Merging on timestamp...
+  Dropped 48 duplicate timestamps (DST clock-back).
+  Merged dataset: 140,240 rows.
+
+[5/6] Adding calendar and lag features...
+
+[6/6] Assigning train/validation/test split...
+  Dropped 672 rows with NaN lag values.
+
+--- Dataset Summary ---
+  Total rows    : 139,568
+  Date range    : 2022-01-08 00:00:00 → 2025-12-31 23:45:00
+  Columns       : ['timestamp', 'load_mwh', 'price_shortage', 'price_surplus', 'regulation_state', 'regulating_condition', 'dual_pricing', 'temperature_c', 'wind_speed_ms', 'hour', 'minute', 'day_of_week', 'month', 'is_weekend', 'is_holiday', 'load_lag_1', 'load_lag_96', 'load_lag_672', 'split']
+
+  Split counts:
+split
+train         69400
+validation    35132
+test          35036
+
+  Missing values:
+timestamp               0
+load_mwh                0
+price_shortage          0
+price_surplus           0
+regulation_state        0
+regulating_condition    0
+dual_pricing            0
+temperature_c           0
+wind_speed_ms           0
+hour                    0
+minute                  0
+day_of_week             0
+month                   0
+is_weekend              0
+is_holiday              0
+load_lag_1              0
+load_lag_96             0
+load_lag_672            0
+split                   0
+
+  Saved to: /Users/fabianvanriesen/Documents/Studie/MSc. Thesis/data/processed/dataset.parquet
+Done.
+
+  [01_build_dataset] finished in 1.3s
+
+======================================================================
+  Step 2/4 — Training models
+======================================================================
+
+Loading data...
+  Train      : 69,400 rows
+  Validation : 35,132 rows
+  Test       : 35,036 rows
+
+  Training baseline model (MSE)...
+  Best iteration: 265
+
+  Training cost-sensitive model (asymmetric imbalance price loss)...
+  Best iteration: 263
+
+  Saved: /Users/fabianvanriesen/Documents/Studie/MSc. Thesis/models/model_baseline.json
+  Saved: /Users/fabianvanriesen/Documents/Studie/MSc. Thesis/models/model_cost.json
+
+Generating predictions...
+  Saved: /Users/fabianvanriesen/Documents/Studie/MSc. Thesis/outputs/predictions.parquet
+
+--- Prediction Summary (Validation Set) ---
+  pred_baseline        | MAE=150.2 | RMSE=357.3 | Bias=-125.50
+  pred_cost            | MAE=154.7 | RMSE=366.2 | Bias=-131.26
+
+Done. Run 03_evaluate.py for full results.
+
+  [02_train_models] finished in 2.2s
+
+======================================================================
+  Step 3/4 — Evaluating & generating figures
+======================================================================
+
+Loading predictions...
+  Validation : 35,132 rows
+  Test       : 35,036 rows
+
+[RQ1] Economic performance...
+            Split          Model  Mean cost (EUR/PTU)  Total cost (EUR)     N  Cost reduction (EUR)  Cost reduction (%)
+Validation (2024) Baseline (MSE)         -2354.540039       -82719744.0 35132                   NaN                 NaN
+Validation (2024) Cost-Sensitive         -2463.629883       -86552288.0 35132             3832544.0               -4.63
+      Test (2025) Baseline (MSE)          1837.560059        64380896.0 35036                   NaN                 NaN
+      Test (2025) Cost-Sensitive          1798.150024        63000064.0 35036             1380832.0                2.14
+
+[RQ2] Forecast bias...
+            Split          Model  Mean bias (MWh)  Over-pred rate (%)  Under-pred rate (%)  MAE (MWh)  RMSE (MWh)
+Validation (2024) Baseline (MSE)       125.500000                60.7                 39.3 150.199997  357.250000
+Validation (2024) Cost-Sensitive       131.259995                61.1                 38.9 154.729996  366.160004
+      Test (2025) Baseline (MSE)       172.179993                61.1                 38.9 198.690002  450.739990
+      Test (2025) Cost-Sensitive       178.940002                61.0                 39.0 203.970001  460.570007
+
+[RQ2] Regime analysis (test set only)...
+                   Regime          Model     N  Mean bias (MWh)  Over-pred rate (%)  Mean cost (EUR/PTU)
+            Peak (08-20h) Baseline (MSE) 18980       315.750000                68.5          1426.880005
+            Peak (08-20h) Cost-Sensitive 18980       329.059998                70.9          1330.959961
+                 Off-peak Baseline (MSE) 16056         2.460000                52.4          2323.040039
+                 Off-peak Cost-Sensitive 16056         1.480000                49.2          2350.419922
+High price (>247 EUR/MWh) Baseline (MSE)   672       205.649994                67.1         54309.519531
+High price (>247 EUR/MWh) Cost-Sensitive   672       214.250000                69.6         53319.019531
+             Normal price Baseline (MSE) 34364       171.520004                61.0           811.460022
+             Normal price Cost-Sensitive 34364       178.250000                60.8           790.640015
+             Dual pricing Baseline (MSE)  9578       172.419998                61.4         -4545.479980
+             Dual pricing Cost-Sensitive  9578       180.389999                61.9         -4866.330078
+           Single pricing Baseline (MSE) 25458       172.089996                61.0          4239.040039
+           Single pricing Cost-Sensitive 25458       178.389999                60.6          4305.509766
+
+[RQ3] Trade-off summary already in Table 1 + Table 2 above.
+
+  Saved: /Users/fabianvanriesen/Documents/Studie/MSc. Thesis/outputs/results_summary.csv
+
+Generating figures...
+  Saved: /Users/fabianvanriesen/Documents/Studie/MSc. Thesis/outputs/figures/fig1_residuals.png
+  Saved: /Users/fabianvanriesen/Documents/Studie/MSc. Thesis/outputs/figures/fig2_pred_vs_actual.png
+  Saved: /Users/fabianvanriesen/Documents/Studie/MSc. Thesis/outputs/figures/fig3_regime_bias.png
+  Saved: /Users/fabianvanriesen/Documents/Studie/MSc. Thesis/outputs/figures/fig4_cost_over_time.png
+  Saved: /Users/fabianvanriesen/Documents/Studie/MSc. Thesis/outputs/figures/fig6_cost_by_regime.png
+
+Done. All results saved to thesis folder.
+
+  [03_evaluation] finished in 1.1s
+
+======================================================================
+  Step 4/4 — Running significance tests
+======================================================================
+
+======================================================================
+STATISTICAL SIGNIFICANCE TESTS
+Thesis: From Accuracy to Profit — F.E. van Riesen (2026)
+Option A: Default hyperparameters (max_depth=6, lr=0.05)
+======================================================================
+
+Validation set: 35,132 PTU intervals (2024)
+Test set      : 35,036 PTU intervals (2025)
+
+--- Per-PTU Cost Difference (Baseline minus Cost-Sensitive) ---
+  Mean difference      : €39.41 per PTU
+  Std deviation        : €4,812.01
+  Median difference    : €0.00
+  Intervals where baseline costs more : 17,384 (49.6%)
+  Intervals where cost-sensitive costs more : 17,465 (49.8%)
+  Total cost reduction (baseline - cost-sensitive): €1,380,834
+
+--- Test 1: Paired t-test (parametric) ---
+  H0: Mean per-PTU cost is equal across models
+  t-statistic : 1.5331
+  p-value     : 0.1253
+  Result      : NOT significant at α=0.05 — fail to reject H0
+  Note: t-test assumes normality. Imbalance costs have heavy-tailed
+        distributions; the Wilcoxon test below is more appropriate.
+
+--- Test 2: Wilcoxon Signed-Rank Test (non-parametric) ---
+  H0: Median per-PTU cost difference is zero
+  W-statistic : 302303394
+  p-value     : 0.4826
+  Result      : NOT significant at α=0.05 — fail to reject H0
+  Note: Non-parametric test, robust to outliers and non-normality.
+        Preferred test for heavy-tailed imbalance cost distributions.
+
+--- Normality Check on Cost Differences ---
+  Shapiro-Wilk test on sample of 5,000: p=0.0000
+  Distribution is NOT normal (p<0.05) → Wilcoxon is appropriate
+
+--- Effect Size ---
+  Cohen's d : 0.0082
+  Interpretation : negligible effect size
+
+--- Dual vs Single Pricing Breakdown ---
+(Asymmetric loss only differs from symmetric in dual-pricing intervals.
+ Reductions are expressed as % of |baseline| so the sign is
+ interpretable even when baseline cost is negative = BRP revenue.)
+
+  Test (2025) — Dual pricing (n=9,578):
+    Baseline total cost  : €     -43,536,616
+    Cost-sens total cost : €     -46,609,672
+    Reduction            : €       3,073,059  (+7.06% of |baseline|)
+    Mean reduction / PTU : €320.85
+    Wilcoxon: W=21430094, p=4.511e-06  ← significant
+    t-test  : t=8.7544, p=2.399e-18  ← significant
+    Cohen's d: 0.0895
+
+  Test (2025) — Single pricing (n=25,458):
+    Baseline total cost  : €     107,917,504
+    Cost-sens total cost : €     109,609,728
+    Reduction            : €      -1,692,224  (-1.57% of |baseline|)
+    Mean reduction / PTU : €-66.47
+    Wilcoxon: W=158121342, p=0.0506
+    t-test  : t=-2.0416, p=0.0412  ← significant
+    Cohen's d: -0.0128
+
+  Validation (2024) — Dual pricing (n=5,894):
+    Baseline total cost  : €    -110,463,432
+    Cost-sens total cost : €    -115,904,440
+    Reduction            : €       5,441,006  (+4.93% of |baseline|)
+    Mean reduction / PTU : €923.14
+    Wilcoxon: W=7216802, p=3.696e-27  ← significant
+    t-test  : t=12.0546, p=4.485e-33  ← significant
+    Cohen's d: 0.1570
+
+  Validation (2024) — Single pricing (n=29,238):
+    Baseline total cost  : €      27,743,684
+    Cost-sens total cost : €      29,352,144
+    Reduction            : €      -1,608,466  (-5.80% of |baseline|)
+    Mean reduction / PTU : €-55.01
+    Wilcoxon: W=209090874, p=0.0065  ← significant
+    t-test  : t=-1.8199, p=0.0688
+    Cohen's d: -0.0106
+
+--- Dataset Structure: dual-pricing share per partition ---
+(Reproduces the regime-share figures cited in Methodology and Discussion)
+  Train  2022-2023    dual =  8.15%  (5,656/69,400)
+  Val    2024         dual = 16.78%  (5,894/35,132)
+  Test   2025         dual = 27.34%  (9,578/35,036)
+  Full   dataset      dual = 15.14%  (21,128/139,568)
+
+--- Shortage/Surplus Price Ratio (dual-pricing intervals only) ---
+(Confirms the asymmetry that drives the cost-sensitive model's upward
+ bias shift; mean |price_shortage| ÷ mean |price_surplus|)
+  Train  2022-2023    short=€ 217.91/MWh  surp=€ 120.60/MWh  ratio=1.807×
+  Val    2024         short=€ 153.47/MWh  surp=€  87.43/MWh  ratio=1.755×
+  Test   2025         short=€ 112.26/MWh  surp=€  59.59/MWh  ratio=1.884×
+
+--- Regime-Conditional Bias Shift on Test 2025 ---
+(Cost-sensitive minus baseline mean forecast error, by regime.
+ Confirms that the expectile shift concentrates where dual-pricing
+ and large absolute prices are densest.)
+  (high-price threshold = €247/MWh, 75th pct of |price_shortage| on train)
+  Peak (08-20h)     n=18,980  baseline= +315.75  cost-sens= +329.06  shift= +13.31 MWh
+  Off-peak          n=16,056  baseline=   +2.46  cost-sens=   +1.48  shift=  -0.98 MWh
+  High price        n=   672  baseline= +205.65  cost-sens= +214.25  shift=  +8.60 MWh
+  Normal price      n=34,364  baseline= +171.52  cost-sens= +178.25  shift=  +6.73 MWh
+  Dual pricing      n= 9,578  baseline= +172.42  cost-sens= +180.39  shift=  +7.97 MWh
+  Single pricing    n=25,458  baseline= +172.09  cost-sens= +178.39  shift=  +6.31 MWh
+
+--- Load Distribution by Year ---
+(Explains systematic over-prediction bias: test load is lower than training)
+
+           mean_load_mwh  std_load_mwh  n_obs
+timestamp                                    
+2022              2487.4         493.0  34364
+2023              2648.0         436.6  35036
+2024              2000.8         800.9  35132
+2025              1954.7         907.2  35036
+
+  Train mean  (2022-2023) : 2568.5 MWh
+  Val mean   (2024)       : 2000.8 MWh
+  Test mean  (2025)       : 1954.7 MWh
+
+  Load shift train→test   : -613.8 MWh (-23.9%)
+
+======================================================================
+SUMMARY FOR THESIS REPORTING
+======================================================================
+  Primary test (Wilcoxon): p=0.4826 → not significant
+  Secondary test (t-test): p=0.1253 → not significant
+  Effect size (Cohen's d): 0.0082 (negligible)
+  Total cost reduction: €1,380,834
+  Mean cost reduction per PTU: €39.41
+  Test set: 35,036 intervals (full calendar year 2025)
+  Dual-pricing subset (n=9,578): Wilcoxon p=4.511e-06 → significant, reduction €3,073,059 (+7.06% of |baseline|)
+  Validation dual subset (n=5,894): Wilcoxon p=3.696e-27, reduction €5,441,006 (+4.93% of |baseline|)
+
+  Saved to: /Users/fabianvanriesen/Documents/Studie/MSc. Thesis/outputs/significance_results.txt
+
+  [04_significance_test] finished in 0.1s
+
+======================================================================
+  Pipeline complete — total time: 4.7s
+======================================================================

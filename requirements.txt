@@ -1,0 +1,15 @@
+# From Accuracy to Profit — MSc Thesis, Tilburg University, 2026
+# F.E. van Riesen
+#
+# Tested on Python 3.13.0 (macOS, darwin).
+# Pin exact versions for reproducibility; relax to >= if installing on a
+# different platform or Python minor version.
+
+pandas==2.2.3
+pyarrow==23.0.1
+numpy==2.1.2
+xgboost==3.1.2
+scikit-learn==1.7.2
+scipy==1.14.1
+matplotlib==3.9.2
+holidays==0.94

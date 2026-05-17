@@ -1,0 +1,135 @@
+======================================================================
+STATISTICAL SIGNIFICANCE TESTS
+Thesis: From Accuracy to Profit — F.E. van Riesen (2026)
+Option A: Default hyperparameters (max_depth=6, lr=0.05)
+======================================================================
+
+Validation set: 35,132 PTU intervals (2024)
+Test set      : 35,036 PTU intervals (2025)
+
+--- Per-PTU Cost Difference (Baseline minus Cost-Sensitive) ---
+  Mean difference      : €39.41 per PTU
+  Std deviation        : €4,812.01
+  Median difference    : €0.00
+  Intervals where baseline costs more : 17,384 (49.6%)
+  Intervals where cost-sensitive costs more : 17,465 (49.8%)
+  Total cost reduction (baseline - cost-sensitive): €1,380,834
+
+--- Test 1: Paired t-test (parametric) ---
+  H0: Mean per-PTU cost is equal across models
+  t-statistic : 1.5331
+  p-value     : 0.1253
+  Result      : NOT significant at α=0.05 — fail to reject H0
+  Note: t-test assumes normality. Imbalance costs have heavy-tailed
+        distributions; the Wilcoxon test below is more appropriate.
+
+--- Test 2: Wilcoxon Signed-Rank Test (non-parametric) ---
+  H0: Median per-PTU cost difference is zero
+  W-statistic : 302303394
+  p-value     : 0.4826
+  Result      : NOT significant at α=0.05 — fail to reject H0
+  Note: Non-parametric test, robust to outliers and non-normality.
+        Preferred test for heavy-tailed imbalance cost distributions.
+
+--- Normality Check on Cost Differences ---
+  Shapiro-Wilk test on sample of 5,000: p=0.0000
+  Distribution is NOT normal (p<0.05) → Wilcoxon is appropriate
+
+--- Effect Size ---
+  Cohen's d : 0.0082
+  Interpretation : negligible effect size
+
+--- Dual vs Single Pricing Breakdown ---
+(Asymmetric loss only differs from symmetric in dual-pricing intervals.
+ Reductions are expressed as % of |baseline| so the sign is
+ interpretable even when baseline cost is negative = BRP revenue.)
+
+  Test (2025) — Dual pricing (n=9,578):
+    Baseline total cost  : €     -43,536,616
+    Cost-sens total cost : €     -46,609,672
+    Reduction            : €       3,073,059  (+7.06% of |baseline|)
+    Mean reduction / PTU : €320.85
+    Wilcoxon: W=21430094, p=4.511e-06  ← significant
+    t-test  : t=8.7544, p=2.399e-18  ← significant
+    Cohen's d: 0.0895
+
+  Test (2025) — Single pricing (n=25,458):
+    Baseline total cost  : €     107,917,504
+    Cost-sens total cost : €     109,609,728
+    Reduction            : €      -1,692,224  (-1.57% of |baseline|)
+    Mean reduction / PTU : €-66.47
+    Wilcoxon: W=158121342, p=0.0506
+    t-test  : t=-2.0416, p=0.0412  ← significant
+    Cohen's d: -0.0128
+
+  Validation (2024) — Dual pricing (n=5,894):
+    Baseline total cost  : €    -110,463,432
+    Cost-sens total cost : €    -115,904,440
+    Reduction            : €       5,441,006  (+4.93% of |baseline|)
+    Mean reduction / PTU : €923.14
+    Wilcoxon: W=7216802, p=3.696e-27  ← significant
+    t-test  : t=12.0546, p=4.485e-33  ← significant
+    Cohen's d: 0.1570
+
+  Validation (2024) — Single pricing (n=29,238):
+    Baseline total cost  : €      27,743,684
+    Cost-sens total cost : €      29,352,144
+    Reduction            : €      -1,608,466  (-5.80% of |baseline|)
+    Mean reduction / PTU : €-55.01
+    Wilcoxon: W=209090874, p=0.0065  ← significant
+    t-test  : t=-1.8199, p=0.0688
+    Cohen's d: -0.0106
+
+--- Dataset Structure: dual-pricing share per partition ---
+(Reproduces the regime-share figures cited in Methodology and Discussion)
+  Train  2022-2023    dual =  8.15%  (5,656/69,400)
+  Val    2024         dual = 16.78%  (5,894/35,132)
+  Test   2025         dual = 27.34%  (9,578/35,036)
+  Full   dataset      dual = 15.14%  (21,128/139,568)
+
+--- Shortage/Surplus Price Ratio (dual-pricing intervals only) ---
+(Confirms the asymmetry that drives the cost-sensitive model's upward
+ bias shift; mean |price_shortage| ÷ mean |price_surplus|)
+  Train  2022-2023    short=€ 217.91/MWh  surp=€ 120.60/MWh  ratio=1.807×
+  Val    2024         short=€ 153.47/MWh  surp=€  87.43/MWh  ratio=1.755×
+  Test   2025         short=€ 112.26/MWh  surp=€  59.59/MWh  ratio=1.884×
+
+--- Regime-Conditional Bias Shift on Test 2025 ---
+(Cost-sensitive minus baseline mean forecast error, by regime.
+ Confirms that the expectile shift concentrates where dual-pricing
+ and large absolute prices are densest.)
+  (high-price threshold = €247/MWh, 75th pct of |price_shortage| on train)
+  Peak (08-20h)     n=18,980  baseline= +315.75  cost-sens= +329.06  shift= +13.31 MWh
+  Off-peak          n=16,056  baseline=   +2.46  cost-sens=   +1.48  shift=  -0.98 MWh
+  High price        n=   672  baseline= +205.65  cost-sens= +214.25  shift=  +8.60 MWh
+  Normal price      n=34,364  baseline= +171.52  cost-sens= +178.25  shift=  +6.73 MWh
+  Dual pricing      n= 9,578  baseline= +172.42  cost-sens= +180.39  shift=  +7.97 MWh
+  Single pricing    n=25,458  baseline= +172.09  cost-sens= +178.39  shift=  +6.31 MWh
+
+--- Load Distribution by Year ---
+(Explains systematic over-prediction bias: test load is lower than training)
+
+           mean_load_mwh  std_load_mwh  n_obs
+timestamp                                    
+2022              2487.4         493.0  34364
+2023              2648.0         436.6  35036
+2024              2000.8         800.9  35132
+2025              1954.7         907.2  35036
+
+  Train mean  (2022-2023) : 2568.5 MWh
+  Val mean   (2024)       : 2000.8 MWh
+  Test mean  (2025)       : 1954.7 MWh
+
+  Load shift train→test   : -613.8 MWh (-23.9%)
+
+======================================================================
+SUMMARY FOR THESIS REPORTING
+======================================================================
+  Primary test (Wilcoxon): p=0.4826 → not significant
+  Secondary test (t-test): p=0.1253 → not significant
+  Effect size (Cohen's d): 0.0082 (negligible)
+  Total cost reduction: €1,380,834
+  Mean cost reduction per PTU: €39.41
+  Test set: 35,036 intervals (full calendar year 2025)
+  Dual-pricing subset (n=9,578): Wilcoxon p=4.511e-06 → significant, reduction €3,073,059 (+7.06% of |baseline|)
+  Validation dual subset (n=5,894): Wilcoxon p=3.696e-27, reduction €5,441,006 (+4.93% of |baseline|)
