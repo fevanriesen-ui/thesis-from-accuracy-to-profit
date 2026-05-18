@@ -97,6 +97,7 @@ FIG_PRED_ACTUAL  = os.path.join(FIG_DIR, "fig2_pred_vs_actual.png")
 FIG_REGIME_BIAS  = os.path.join(FIG_DIR, "fig3_regime_bias.png")
 FIG_CUMCOST      = os.path.join(FIG_DIR, "fig4_cost_over_time.png")
 FIG_CUMCOST_REGIME = os.path.join(FIG_DIR, "fig5_cost_by_regime.png")
+FIG_PRICE_DIST   = os.path.join(FIG_DIR, "fig6_price_distributions.png")
 
 # ---------------------------------------------------------------------------
 # 1. Load predictions
@@ -528,7 +529,87 @@ def fig_cumulative_cost_by_regime(test: pd.DataFrame):
 
 
 # ---------------------------------------------------------------------------
-# 11. Main
+# 11. Figure 6 — Empirical shortage vs surplus price distributions
+# ---------------------------------------------------------------------------
+
+def fig_price_distributions():
+    """
+    Figure 6: empirical distributions of |p_shortage| vs |p_surplus|,
+    decomposed by partition (train / validation / test). Restricted to
+    dual-pricing PTUs because in single-pricing intervals the two
+    settlement prices coincide by construction.
+
+    Anchors the mechanism argument in Section 6.2 of the thesis: the
+    upward bias shift of the cost-sensitive model is the rational
+    response to a stable, empirically visible asymmetry between
+    shortage and surplus prices (mean ratio 1.76--1.88x across all
+    three non-overlapping partitions).
+    """
+    ds = pd.read_parquet(DATA_PATH)
+    ds = ds[ds["dual_pricing"] == 1]
+
+    partitions = [
+        ("Training (2022–2023)", ds["split"] == "train"),
+        ("Validation (2024)",         ds["split"] == "validation"),
+        ("Test (2025)",               ds["split"] == "test"),
+    ]
+
+    fig, axes = plt.subplots(1, 3, figsize=(14, 4.5), sharey=True)
+    bins = np.logspace(0, 4, 60)  # 1 to 10,000 EUR/MWh on log axis
+
+    for ax, (label_text, mask) in zip(axes, partitions):
+        sub = ds[mask]
+        short_all = sub["price_shortage"].abs().values
+        surp_all  = sub["price_surplus"].abs().values
+
+        # Ratio is computed on the full population (matching the figures
+        # reported in Section 4.6 of the methodology). Log-scale plotting
+        # only filters zeros for the histogram below.
+        m_short = short_all.mean()
+        m_surp  = surp_all.mean()
+        ratio   = m_short / m_surp
+
+        short = short_all[short_all > 0]
+        surp  = surp_all[surp_all > 0]
+
+        ax.hist(short, bins=bins, density=True,
+                color="#d7191c", alpha=0.55, edgecolor="#7f0c11",
+                linewidth=0.4,
+                label=r"$|p^{\mathrm{shortage}}|$")
+        ax.hist(surp, bins=bins, density=True,
+                color="#2c7bb6", alpha=0.55, edgecolor="#1a4b6e",
+                linewidth=0.4,
+                label=r"$|p^{\mathrm{surplus}}|$")
+
+        # Mean lines (visual anchor for the ratio)
+        ax.axvline(m_short, color="#d7191c", linestyle="--",
+                   linewidth=1.3, alpha=0.95)
+        ax.axvline(m_surp,  color="#2c7bb6", linestyle="--",
+                   linewidth=1.3, alpha=0.95)
+
+        ax.set_xscale("log")
+        ax.set_xlim(1, 5000)
+        ax.set_title(f"{label_text}\nmean ratio = {ratio:.2f}×",
+                     fontsize=12, fontweight="bold")
+        ax.set_xlabel("Absolute settlement price (EUR/MWh)",
+                      fontsize=11)
+        ax.grid(True, which="both", alpha=0.2)
+        if ax is axes[0]:
+            ax.set_ylabel("Density", fontsize=11)
+            ax.legend(loc="upper right", fontsize=10)
+
+    fig.suptitle(
+        "Empirical distribution of Dutch settlement prices "
+        "in dual-pricing PTUs",
+        fontsize=13, fontweight="bold", y=1.02)
+    plt.tight_layout()
+    plt.savefig(FIG_PRICE_DIST, dpi=150, bbox_inches="tight")
+    plt.close()
+    print(f"  Saved: {FIG_PRICE_DIST}")
+
+
+# ---------------------------------------------------------------------------
+# 12. Main
 # ---------------------------------------------------------------------------
 
 def main():
@@ -564,6 +645,7 @@ def main():
     fig_regime_bias(test)
     fig_cumulative_cost(test)
     fig_cumulative_cost_by_regime(test)
+    fig_price_distributions()
 
     print("\nDone. All results saved to thesis folder.")
 
