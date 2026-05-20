@@ -502,15 +502,22 @@ def fig_cumulative_cost_by_regime(test: pd.DataFrame):
         (0, "Single Pricing Intervals"),
     ]):
         subset = test[test["dual_pricing"] == regime_val].copy()
-        cost_base = compute_imbalance_cost(subset, "pred_baseline").cumsum()
-        cost_sens = compute_imbalance_cost(subset, "pred_cost").cumsum()
+        cb_per = compute_imbalance_cost(subset, "pred_baseline")
+        cs_per = compute_imbalance_cost(subset, "pred_cost")
+        cost_base = cb_per.cumsum()
+        cost_sens = cs_per.cumsum()
 
         ax.plot(subset["timestamp"], cost_base, color="#2c7bb6", lw=1.5,
                 label="Baseline (MSE)")
         ax.plot(subset["timestamp"], cost_sens, color="#d7191c", lw=1.5,
                 label="Cost-Sensitive")
 
-        reduction = cost_base.iloc[-1] - cost_sens.iloc[-1]
+        # Compute total reduction as sum of per-PTU differences (pairwise
+        # summation, numerically stable). Using the endpoint of the
+        # cumulative-sum series instead would give a different float32
+        # round-off and a ~10 EUR mismatch with the figure reported in
+        # Section 5 — see 04_significance_test.py for the canonical value.
+        reduction = (cb_per - cs_per).sum()
         ax.set_title(f"{regime_label} (n={len(subset):,})\n"
                      f"Reduction: €{reduction:,.0f}",
                      fontsize=12, fontweight="bold")
